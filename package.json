@@ -1,0 +1,117 @@
+{
+  "name": "antigravity-health-dashboard",
+  "displayName": "Antigravity Health Dashboard",
+  "description": "Monitor your AI quota and health",
+  "version": "1.2.1",
+  "publisher": "useaitechdad",
+  "author": {
+    "name": "Use AI with Tech Dad",
+    "url": "https://github.com/useaitechdad"
+  },
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/useaitechdad/antigravity-health-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/useaitechdad/antigravity-health-dashboard/issues"
+  },
+  "homepage": "https://github.com/useaitechdad/antigravity-health-dashboard/blob/main/README.md",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tfa-sidebar",
+          "title": "Antigravity Health",
+          "icon": "assets/activity-bar.svg"
+        }
+      ]
+    },
+    "views": {
+      "tfa-sidebar": [
+        {
+          "type": "webview",
+          "id": "tfa.sidebar",
+          "name": "Dashboard",
+          "icon": "assets/activity-bar.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "tfa.openPanel",
+        "title": "Open Panel",
+        "category": "Antigravity Health"
+      },
+      {
+        "command": "tfa.cleanCache",
+        "title": "Clean Cache",
+        "category": "Antigravity Health",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "tfa.refreshQuota",
+        "title": "Refresh Quota",
+        "category": "Antigravity Health",
+        "icon": "$(refresh)"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Antigravity Health",
+        "properties": {
+          "tfa.dashboard.refreshRate": {
+            "type": "number",
+            "default": 90,
+            "minimum": 30,
+            "description": "Quota refresh interval (seconds)"
+          },
+          "tfa.dashboard.gaugeStyle": {
+            "type": "string",
+            "enum": [
+              "semi-arc",
+              "classic-donut",
+              "bar"
+            ],
+            "default": "bar",
+            "description": "Visual style of quota gauges"
+          },
+          "tfa.dashboard.showCredits": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the AI Credits (Prompt/Flow) display in the dashboard"
+          },
+          "tfa.system.debugMode": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable debug logging"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node ./build.js",
+    "watch": "node ./esbuild.js --watch --sourcemap",
+    "vscode:prepublish": "npm run build",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.36",
+    "lit": "^3.1.4"
+  }
+}

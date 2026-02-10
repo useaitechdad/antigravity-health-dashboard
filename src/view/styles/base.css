@@ -1,0 +1,106 @@
+/*
+ * Copyright 2026 Use AI with Tech Dad
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * NOTICE: This file has been modified by Use AI with Tech Dad for the Antigravity series.
+ */
+
+/**
+ * Base Styles
+ * 
+ * Global resets, CSS variables, and common utility classes
+ */
+
+/* Base styles */
+body {
+  font-family: var(--vscode-font-family);
+  padding: 0;
+  margin: 0;
+  color: var(--vscode-foreground);
+  overflow: hidden;
+  /* Disable body scroll */
+  height: 100%;
+  /* Full height */
+}
+
+html {
+  height: 100%;
+  font-size: calc(var(--vscode-font-size) * var(--antigravity-font-scale, 1));
+}
+
+sidebar-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Common styles */
+.codicon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tooltip Utility - Follows VS Code Theme */
+[data-tooltip] {
+  position: relative;
+  cursor: help;
+}
+
+/* Global Tooltip Element (Managed by TooltipManager.ts) */
+.global-tooltip {
+  padding: 6px 10px;
+  background-color: var(--vscode-editorHoverWidget-background, #252526);
+  color: var(--vscode-editorHoverWidget-foreground, #cccccc);
+  border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+  border-radius: 3px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: normal;
+  word-wrap: break-word;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  text-align: left;
+  /* Width controlled by JS */
+  width: max-content;
+}
+
+.loading {
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  color: var(--vscode-foreground);
+}
+
+.empty-state {
+  padding: 12px;
+  color: var(--vscode-foreground);
+  font-style: italic;
+  text-align: center;
+}
