@@ -1,5 +1,7 @@
 # Antigravity Health Dashboard
 
+[Watch the video](https://youtu.be/fGuhlTqddyg) - Watch this to understand what this is and why you need this and how to use it.
+
 > **Lean. Fast. Focused.**
 >
 > Monitor your AI quota, manage cache usage, and track storage health—all from a zero-dependency dashboard.
