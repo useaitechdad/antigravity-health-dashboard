@@ -5,7 +5,9 @@
       "label": "Gemini 3 Flash",
       "shortLabel": "Flash",
       "themeColor": "#40C4FF",
-      "prefixes": ["gemini-3-flash"],
+      "prefixes": [
+        "gemini-3-flash"
+      ],
       "models": [
         {
           "id": "gemini-3-flash",
@@ -15,11 +17,36 @@
       ]
     },
     {
+      "id": "gemini-3-1-pro",
+      "label": "Gemini 3.1 Pro",
+      "shortLabel": "3.1 Pro",
+      "themeColor": "#1DE9B6",
+      "prefixes": [
+        "gemini-3-1",
+        "gemini-3.1",
+        "gemini 3.1"
+      ],
+      "models": [
+        {
+          "id": "gemini-3-1-pro-high",
+          "modelName": "MODEL_GEMINI_3_1_PRO_HIGH",
+          "displayName": "Gemini 3.1 Pro (High)"
+        },
+        {
+          "id": "gemini-3-1-pro-low",
+          "modelName": "MODEL_GEMINI_3_1_PRO_LOW",
+          "displayName": "Gemini 3.1 Pro (Low)"
+        }
+      ]
+    },
+    {
       "id": "gemini-pro",
       "label": "Gemini 3 Pro",
       "shortLabel": "Pro",
       "themeColor": "#69F0AE",
-      "prefixes": ["gemini"],
+      "prefixes": [
+        "gemini"
+      ],
       "models": [
         {
           "id": "gemini-3-pro-high",
@@ -38,7 +65,9 @@
       "label": "Claude",
       "shortLabel": "Claude",
       "themeColor": "#FFAB40",
-      "prefixes": ["claude"],
+      "prefixes": [
+        "claude"
+      ],
       "models": [
         {
           "id": "claude-4-5-sonnet",
@@ -62,7 +91,9 @@
       "label": "GPT-OSS 120B",
       "shortLabel": "GPT",
       "themeColor": "#FF5252",
-      "prefixes": ["gpt"],
+      "prefixes": [
+        "gpt"
+      ],
       "models": [
         {
           "id": "gpt-oss-120b-medium",

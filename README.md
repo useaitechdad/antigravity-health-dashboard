@@ -14,7 +14,7 @@
 
 Stop guessing when your AI credits will reset.
 
-- **Real-time Limits**: See remaining quota for Gemini 3 (Pro High/Low, Flash), Claude (Sonnet 4.5, Opus 4.5/4.6), and GPT-OSS 120B.
+- **Real-time Limits**: See remaining quota for Gemini 3.1 (Pro High/Low), Gemini 3 (Pro High/Low, Flash), Claude (Sonnet 4.5, Opus 4.5/4.6), and GPT-OSS 120B.
 - **Smart Prediction**: Calculates your current usage rate and predicts "runway" before exhaustion.
 - **Credit Tracking**: Monitor Prompt Consumption and Execution Consumption credits with visual breakdowns.
 - **Status Bar Integration**: Get critical health metrics (Quota % / Cache Size) directly in your VS Code status bar.
@@ -58,7 +58,7 @@ If you have cloned this repository, follow these steps to build and install the 
     npx @vscode/vsce package
     ```
 
-    _This will generate a file (e.g., `antigravity-health-dashboard-1.2.1.vsix`) in the project root._
+    _This will generate a file (e.g., `antigravity-health-dashboard-1.2.3.vsix`) in the project root._
 
 3.  **Install into VS Code**
     - Open the **Extensions** view (`Cmd+Shift+X`).
