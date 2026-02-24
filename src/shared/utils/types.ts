@@ -142,10 +142,10 @@ export interface CodeContext {
 }
 
 export interface FileItem {
-    name: string;
-    path: string;
-    size?: number;
-    type?: 'file' | 'directory';
+  name: string;
+  path: string;
+  size?: number;
+  type?: 'file' | 'directory';
 }
 
 // NEW: Storage Item for Rules/Skills/Workflows
@@ -166,35 +166,35 @@ export interface CacheInfo {
   brainTasks: BrainTask[];
   codeContexts: CodeContext[];
   // NEW: Custom storage items
-  storageItems?: StorageItem[]; 
+  storageItems?: StorageItem[];
 }
 
 // ==================== History & Charts ====================
 
 export interface BucketItem {
-    groupId: string;
-    usage: number;
-    color?: string;
+  groupId: string;
+  usage: number;
+  color?: string;
 }
 
 export interface UsageBucket {
-    startTime: number;
-    endTime: number;
-    items: BucketItem[];
+  startTime: number;
+  endTime: number;
+  items: BucketItem[];
 }
 
 export interface QuotaHistoryPoint {
-    timestamp: number;
-    usage: Record<string, number>;
+  timestamp: number;
+  usage: Record<string, number>;
 }
 
 export interface CachedTreeState {
-    brainTasks: { id: string; title: string; size: string; lastModified: number }[];
-    codeContexts: { id: string; name: string; size: string }[];
-    brainExpanded: boolean;
-    contextsExpanded: boolean;
-    resourcesExpanded: boolean;
-    lastUpdated: number;
+  brainTasks: { id: string; title: string; size: string; lastModified: number }[];
+  codeContexts: { id: string; name: string; size: string }[];
+  brainExpanded: boolean;
+  contextsExpanded: boolean;
+  resourcesExpanded: boolean;
+  lastUpdated: number;
 }
 
 // ==================== Configuration Related ====================
@@ -207,6 +207,7 @@ export interface TfaConfig {
   "dashboard.refreshRate": number;
   "dashboard.includeSecondaryModels": boolean;
   "dashboard.showCredits": boolean;
+  "dashboard.showAbsoluteTime": boolean;
   "dashboard.uiScale": number;
 
   // ===== 2. Status Bar Settings =====

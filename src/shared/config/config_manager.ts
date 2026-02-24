@@ -23,13 +23,13 @@ import { TfaConfig } from '../utils/types';
 export type { TfaConfig };
 
 export interface IConfigReader {
-    get<T>(key: string, defaultValue: T): T;
-    update<T>(key: string, value: T): Promise<void>;
-    onConfigChange(callback: (config: TfaConfig) => void, configManager: ConfigManager): { dispose(): void };
+  get<T>(key: string, defaultValue: T): T;
+  update<T>(key: string, value: T): Promise<void>;
+  onConfigChange(callback: (config: TfaConfig) => void, configManager: ConfigManager): { dispose(): void };
 }
 
 export class ConfigManager {
-  constructor(private readonly reader: IConfigReader) {}
+  constructor(private readonly reader: IConfigReader) { }
 
   public get<T>(key: string, defaultValue: T): T {
     return this.reader.get(key, defaultValue);
@@ -49,6 +49,7 @@ export class ConfigManager {
       "dashboard.refreshRate": this.reader.get("dashboard.refreshRate", 90),
       "dashboard.includeSecondaryModels": this.reader.get("dashboard.includeSecondaryModels", true),
       "dashboard.showCredits": this.reader.get("dashboard.showCredits", true),
+      "dashboard.showAbsoluteTime": this.reader.get("dashboard.showAbsoluteTime", false),
       "dashboard.uiScale": this.reader.get("dashboard.uiScale", 1.0),
 
       "status.showQuota": this.reader.get("status.showQuota", true),

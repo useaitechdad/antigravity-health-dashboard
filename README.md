@@ -98,6 +98,7 @@ Start with sensible defaults, or tune to your needs via **Settings**:
 | **Quota Polling**      | `90s`    | How often to refresh health metrics (min: 60s).                    |
 | **Warning Threshold**  | `40%`    | Trigger yellow status bar warnings at this level.                  |
 | **Critical Threshold** | `20%`    | Trigger red critical alerts at this level.                         |
+| **Show Absolute Time** | `Off`    | Show absolute time of quota expiration (e.g. at 3:00 PM).          |
 | **Auto-Clean Cache**   | `Off`    | If enabled, keeps only the last N tasks (default: 5).              |
 | **View Mode**          | `Groups` | Visualize quota by Model Family (Gemini/GPT) or individual models. |
 

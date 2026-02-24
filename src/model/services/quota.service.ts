@@ -135,7 +135,7 @@ export class QuotaService implements IQuotaService {
 
         // SECURITY: Enforce localhost for quota requests 
         // (already enforced in http_client, but explicit here via config default)
-        
+
         return await httpRequest<T>({
             hostname: host,
             port: this.serverInfo.port,
@@ -221,6 +221,8 @@ export class QuotaService implements IQuotaService {
         } : undefined;
 
         const rawModels = userStatus.cascadeModelConfigData?.clientModelConfigs || [];
+        const showAbsoluteTime = this.configManager.getConfig()["dashboard.showAbsoluteTime"] ?? false;
+
         const models: ModelQuotaInfo[] = rawModels
             .filter((m: RawModelConfig) => m.quotaInfo)
             .map((m: RawModelConfig) => {
@@ -240,24 +242,37 @@ export class QuotaService implements IQuotaService {
                     remainingPercentage: remainingFraction * 100,
                     isExhausted: remainingFraction === 0,
                     resetTime,
-                    timeUntilReset: this.formatTime(diff),
+                    timeUntilReset: this.formatTime(diff, resetTime, showAbsoluteTime),
                 };
             });
 
         return { timestamp: new Date(), promptCredits, flowCredits, tokenUsage, userInfo, models };
     }
 
-    private formatTime(ms: number): string {
+    private formatTime(ms: number, resetDate: Date, showAbsoluteTime: boolean): string {
         if (ms <= 0) return 'Ready';
         const mins = Math.ceil(ms / 60000);
-        if (mins < 60) return `${mins}m`;
-        const hours = Math.floor(mins / 60);
-        if (hours >= 24) {
-            const days = Math.floor(hours / 24);
-            const remainingHours = hours % 24;
-            return `${days}d ${remainingHours}h`;
+        let durationStr = '';
+
+        if (mins < 60) {
+            durationStr = `${mins}m`;
+        } else {
+            const hours = Math.floor(mins / 60);
+            if (hours >= 24) {
+                const days = Math.floor(hours / 24);
+                const remainingHours = hours % 24;
+                durationStr = `${days}d ${remainingHours}h`;
+            } else {
+                durationStr = `${hours}h ${mins % 60}m`;
+            }
         }
-        return `${hours}h ${mins % 60}m`;
+
+        if (showAbsoluteTime) {
+            const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+            return `${durationStr} (at ${timeFormatter.format(resetDate)})`;
+        }
+
+        return durationStr;
     }
 }
 

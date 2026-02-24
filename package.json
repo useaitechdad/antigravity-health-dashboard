@@ -2,7 +2,7 @@
   "name": "antigravity-health-dashboard",
   "displayName": "Antigravity Health Dashboard",
   "description": "Monitor your AI quota and health",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "publisher": "useaitechdad",
   "author": {
     "name": "Use AI with Tech Dad",
@@ -88,6 +88,11 @@
             "type": "boolean",
             "default": true,
             "description": "Show the AI Credits (Prompt/Flow) display in the dashboard"
+          },
+          "tfa.dashboard.showAbsoluteTime": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show absolute time of quota expiration (e.g. at 3:00 PM) alongside the countdown timer"
           },
           "tfa.system.debugMode": {
             "type": "boolean",
