@@ -103,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const statusBarManager = new StatusBarManager(appViewModel, configManager);
   context.subscriptions.push(statusBarManager);
 
-  const sidebarProvider = new SidebarProvider(context.extensionUri, appViewModel);
+  const sidebarProvider = new SidebarProvider(context.extensionUri, appViewModel, context.extension.packageJSON.version);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(SidebarProvider.viewType, sidebarProvider)
   );
@@ -121,28 +121,34 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.window.showInformationMessage(`Cleaned ${result.deletedCount} items, freed ${formatBytes(result.freedBytes)}`);
     }),
     vscode.commands.registerCommand("tfa.restartLanguageServer", async () => {
-        // Just trigger a re-detection logic
+      await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: "Reconnecting to Antigravity Local Service...",
+        cancellable: false
+      }, async () => {
         bootRetryCount = 0;
+        hasShownNotification = false;
         await bootServerConnection();
+      });
     }),
     vscode.commands.registerCommand("tfa.restartUserStatusUpdater", async () => {
-        // Force refresh
-        await appViewModel.refreshQuota();
-        vscode.window.showInformationMessage("Triggered status update");
+      // Force refresh
+      await appViewModel.refreshQuota();
+      vscode.window.showInformationMessage("Triggered status update");
     }),
     vscode.commands.registerCommand("tfa.showLogs", () => {
-        // Output channel is exposed via logger but not directly command-callable usually
-        // We can just rely on user knowing where output channel is, or expose a command if needed
-        // For now, no-op or implementation if logger exposes `show()`
-        import("./shared/utils/logger").then(m => m.showLog());
+      // Output channel is exposed via logger but not directly command-callable usually
+      // We can just rely on user knowing where output channel is, or expose a command if needed
+      // For now, no-op or implementation if logger exposes `show()`
+      import("./shared/utils/logger").then(m => m.showLog());
     }),
     vscode.commands.registerCommand("tfa.runDiagnostics", async () => {
-        // Simple diagnostics for now
-        const state = appViewModel.getState();
-        // @ts-ignore - Accessing private property for debug
-        const snapshot = appViewModel['_lastSnapshot'];
-        
-        const output = `
+      // Simple diagnostics for now
+      const state = appViewModel.getState();
+      // @ts-ignore - Accessing private property for debug
+      const snapshot = appViewModel['_lastSnapshot'];
+
+      const output = `
 Antigravity Panel Diagnostics
 ============================
 Timestamp: ${new Date().toISOString()}
@@ -170,9 +176,9 @@ Configuration
 Refesh Rate: ${configManager.get('dashboard.refreshRate', 60)}
 Debug Mode: ${configManager.get('system.debugMode', false)}
 `.trim();
-        
-        const doc = await vscode.workspace.openTextDocument({ content: output, language: 'json' });
-        await vscode.window.showTextDocument(doc);
+
+      const doc = await vscode.workspace.openTextDocument({ content: output, language: 'json' });
+      await vscode.window.showTextDocument(doc);
     })
   );
 
@@ -190,9 +196,9 @@ Debug Mode: ${configManager.get('system.debugMode', false)}
 
   // Auto-clean on startup
   appViewModel.performAutoClean().then(res => {
-      if (res && res.deletedCount > 0) {
-          infoLog(`Auto-cleaned ${res.deletedCount} items (${formatBytes(res.freedBytes)})`);
-      }
+    if (res && res.deletedCount > 0) {
+      infoLog(`Auto-cleaned ${res.deletedCount} items (${formatBytes(res.freedBytes)})`);
+    }
   });
 
 
@@ -206,9 +212,10 @@ Debug Mode: ${configManager.get('system.debugMode', false)}
     const processFinder = new ProcessFinder();
 
     try {
+      appViewModel.setConnectionStatus('detecting', null);
       infoLog(`🔍 Attempting to connect to Antigravity language server (attempt ${bootRetryCount + 1}/${MAX_BOOT_RETRY + 1})...`);
       const expectedIds = getExpectedWorkspaceIds();
-      
+
       const serverInfo = await processFinder.detect();
       const extVersion = context.extension.packageJSON.version;
       const ideVersion = vscode.version;
@@ -216,12 +223,12 @@ Debug Mode: ${configManager.get('system.debugMode', false)}
       if (serverInfo) {
         quotaService.setServerInfo(serverInfo);
         appViewModel.setConnectionStatus('connected', null);
-        bootRetryCount = 0; 
+        bootRetryCount = 0;
 
         infoLog(`✅ Connected to language server on port ${serverInfo.port}`);
-        
+
         await appViewModel.refreshQuota();
-        
+
         if (!hasShownNotification && quotaService.parsingError) {
           let message = vscode.l10n.t("Server data parsing error detected, some features limited");
           if (quotaService.parsingError.startsWith('AUTH_FAILED')) {
@@ -247,7 +254,7 @@ Debug Mode: ${configManager.get('system.debugMode', false)}
         bootRetryCount = 0;
         appViewModel.setConnectionStatus('failed', processFinder.failureReason);
         warnLog(`❌ Connection failed. Reason: ${processFinder.failureReason || 'unknown'}`);
-        
+
         if (hasShownNotification) return;
 
         const reason = processFinder.failureReason || "unknown_failure";
@@ -257,10 +264,10 @@ Debug Mode: ${configManager.get('system.debugMode', false)}
         else if (reason === 'workspace_mismatch') msg = "Server process found but Workspace ID mismatch.";
 
         vscode.window.showErrorMessage(msg, "Retry").then(sel => {
-            if (sel === "Retry") {
-                bootRetryCount = 0;
-                bootServerConnection();
-            }
+          if (sel === "Retry") {
+            bootRetryCount = 0;
+            bootServerConnection();
+          }
         });
         hasShownNotification = true;
       }
@@ -272,22 +279,22 @@ Debug Mode: ${configManager.get('system.debugMode', false)}
 
   // Monitor workspace changes to re-check connection (e.g. if expected IDs change)
   context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      infoLog("Workspace folders changed, re-detecting server...");
-      bootRetryCount = 0;
-      bootServerConnection();
+    infoLog("Workspace folders changed, re-detecting server...");
+    bootRetryCount = 0;
+    bootServerConnection();
   }));
 
   // Initial boot
   bootServerConnection();
 }
 
-export function deactivate() {}
+export function deactivate() { }
 
 function formatBytes(bytes: number, decimals = 2) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }

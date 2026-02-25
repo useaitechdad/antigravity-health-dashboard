@@ -141,7 +141,7 @@ export class SidebarFooter extends LitElement {
       <div class="action-card">
         <!-- Sticky Header (Toggle) -->
         <div class="action-header" @click=${this._toggleCollapse}>
-          <span>Tools & Recovery (v1.2.0)</span>
+          <span>Tools & Recovery (v${this._t.extensionVersion || '1.0.0'})</span>
           <i class="codicon codicon-chevron-${this._isCollapsed ? 'up' : 'down'}"></i>
         </div>
 
@@ -180,8 +180,8 @@ export class SidebarFooter extends LitElement {
              <button class="action-item" @click=${() => this._postMessage('restartLanguageServer')}>
                 <i class="codicon codicon-sync action-icon"></i>
                 <div class="action-details">
-                   <span class="action-title">Restart Service</span>
-                   <span class="action-desc">Reconnect Agent Connection</span>
+                   <span class="action-title">${this._t.restartService || 'Reconnect to Antigravity'}</span>
+                   <span class="action-desc">Use if quota is inaccurate or charts freeze</span>
                 </div>
              </button>
              <button class="action-item" @click=${() => this._postMessage('reloadWindow')}>

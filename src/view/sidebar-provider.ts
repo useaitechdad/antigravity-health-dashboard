@@ -37,8 +37,7 @@ import {
 import { WebviewHtmlBuilder } from "./html-builder";
 
 export class SidebarProvider
-  implements vscode.WebviewViewProvider, vscode.Disposable
-{
+  implements vscode.WebviewViewProvider, vscode.Disposable {
   public static readonly viewType = "tfa.sidebar";
   private _view?: vscode.WebviewView;
   private _disposables: vscode.Disposable[] = [];
@@ -46,6 +45,7 @@ export class SidebarProvider
   constructor(
     private readonly _extensionUri: vscode.Uri,
     private readonly _viewModel: AppViewModel,
+    private readonly _extensionVersion: string,
   ) {
     // Subscribe to state changes from ViewModel
     this._disposables.push(
@@ -202,7 +202,7 @@ export class SidebarProvider
       .setTranslations({
         reportIssue: vscode.l10n.t("Feedback"),
         giveStar: vscode.l10n.t("Star"),
-        restartService: vscode.l10n.t("Restart Service"),
+        restartService: vscode.l10n.t("Reconnect to Antigravity"),
         resetStatus: vscode.l10n.t("Reset Status"),
         userProfile: vscode.l10n.t("User Profile"),
         tier: vscode.l10n.t("Tier"),
@@ -211,7 +211,7 @@ export class SidebarProvider
         flowCredits: vscode.l10n.t("Flow"),
         used: vscode.l10n.t("Used"),
         restartServiceTooltip: vscode.l10n.t(
-          "Restart the background Agent language server (use when code analysis is stuck)",
+          "Reconnect to the background Agent language server (use when quota or charts are inaccurate)",
         ),
         resetStatusTooltip: vscode.l10n.t(
           "Reset user subscription and quota refresh status (use when quota display is not updating)",
@@ -246,6 +246,7 @@ export class SidebarProvider
         codeTracker: vscode.l10n.t("Workspace Code Context"),
         noTasksFound: vscode.l10n.t("No tasks found"),
         noCacheFound: vscode.l10n.t("No code context cache"),
+        extensionVersion: this._extensionVersion,
       })
       .build();
   }

@@ -40,27 +40,6 @@
       ]
     },
     {
-      "id": "gemini-pro",
-      "label": "Gemini 3 Pro",
-      "shortLabel": "Pro",
-      "themeColor": "#69F0AE",
-      "prefixes": [
-        "gemini"
-      ],
-      "models": [
-        {
-          "id": "gemini-3-pro-high",
-          "modelName": "MODEL_PLACEHOLDER_M8",
-          "displayName": "Gemini 3 Pro (High)"
-        },
-        {
-          "id": "gemini-3-pro-low",
-          "modelName": "MODEL_PLACEHOLDER_M7",
-          "displayName": "Gemini 3 Pro (Low)"
-        }
-      ]
-    },
-    {
       "id": "claude",
       "label": "Claude",
       "shortLabel": "Claude",
