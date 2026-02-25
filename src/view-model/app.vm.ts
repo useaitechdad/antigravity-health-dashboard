@@ -89,6 +89,7 @@ export class AppViewModel implements vscode.Disposable {
   readonly onTreeChange = this._onTreeChange.event;
 
   private _expandedTasks = new Set<string>();
+  private _expandedConversations = new Set<string>();
   private _expandedContexts = new Set<string>();
   private _expandedResources = new Set<string>();
   private _taskFilesCache = new Map<string, FileItem[]>();
@@ -133,13 +134,16 @@ export class AppViewModel implements vscode.Disposable {
         totalSize: 0,
         brainSize: 0,
         conversationsSize: 0,
+        codeContextsSize: 0,
         brainCount: 0,
         formattedTotal: "0 B",
         formattedBrain: "0 B",
         formattedConversations: "0 B",
+        formattedCodeContexts: "0 B",
       },
       tree: {
         tasks: { expanded: false, folders: [] },
+        conversations: { expanded: false, folders: [] },
         contexts: { expanded: false, folders: [] },
         resources: { expanded: false, folders: [] },
       },
@@ -211,6 +215,26 @@ export class AppViewModel implements vscode.Disposable {
     }
   }
 
+  async deleteConversation(conversationId: string): Promise<void> {
+    const confirm = await vscode.window.showWarningMessage(
+      `Are you sure you want to delete conversation ${conversationId}?`,
+      { modal: true },
+      "Delete",
+    );
+    if (confirm === "Delete") {
+      // Deletes the .pb file using CacheService and triggers a refresh.
+      // Easiest is to add deleteConversation to CacheService or just use deleteFile
+      // Wait we can just delete the .pb file directly through deleteFile since we know the path
+      // Actually, cache.service.ts may need deleteConversation. Wait, deleteFile already exists.
+      const path = require("path");
+      const { getConversationsDir } = require("../shared/utils/paths");
+      const pbPath = path.join(getConversationsDir(), `${conversationId}.pb`);
+      await this.cacheService.deleteFile(pbPath);
+      this._expandedConversations.delete(conversationId);
+      await this.refreshCache();
+    }
+  }
+
   async deleteContext(contextId: string): Promise<void> {
     const confirm = await vscode.window.showWarningMessage(
       `Are you sure you want to delete context ${contextId}?`,
@@ -230,6 +254,25 @@ export class AppViewModel implements vscode.Disposable {
     this._taskFilesCache.clear();
     this._contextFilesCache.clear();
     await this.refreshCache();
+  }
+
+  async toggleConversationExpansion(conversationId: string): Promise<void> {
+    if (this._expandedConversations.has(conversationId)) {
+      this._expandedConversations.delete(conversationId);
+    } else {
+      this._expandedConversations.add(conversationId);
+    }
+    await this.updateConversationExpansion(conversationId);
+    this._onTreeChange.fire(this._state.tree);
+  }
+
+  private async updateConversationExpansion(convId: string): Promise<void> {
+    const folder = this._state.tree.conversations.folders.find((f) => f.id === convId);
+    if (folder) {
+      folder.expanded = this._expandedConversations.has(convId);
+      // Conversations don't have files underneath like Tasks, so files is always empty
+      folder.files = [];
+    }
   }
 
   async toggleTaskExpansion(taskId: string): Promise<void> {
@@ -329,6 +372,12 @@ export class AppViewModel implements vscode.Disposable {
     this._onTreeChange.fire(this._state.tree);
   }
 
+  toggleConversationsSection(): void {
+    this._state.tree.conversations.expanded = !this._state.tree.conversations.expanded;
+    this.persistTreeState();
+    this._onTreeChange.fire(this._state.tree);
+  }
+
   toggleContextsSection(): void {
     this._state.tree.contexts.expanded = !this._state.tree.contexts.expanded;
     this.persistTreeState();
@@ -356,6 +405,7 @@ export class AppViewModel implements vscode.Disposable {
       })),
       brainExpanded: this._state.tree.tasks.expanded,
       contextsExpanded: this._state.tree.contexts.expanded,
+      conversationsExpanded: this._state.tree.conversations.expanded,
       resourcesExpanded: this._state.tree.resources.expanded,
       lastUpdated: Date.now(),
     });
@@ -652,10 +702,10 @@ export class AppViewModel implements vscode.Disposable {
       const models = this._lastSnapshot.models || [];
       const filteredModels = hiddenGroupId
         ? models.filter(
-            (m) =>
-              this.strategyManager.getGroupForModel(m.modelId, m.label).id !==
-              hiddenGroupId,
-          )
+          (m) =>
+            this.strategyManager.getGroupForModel(m.modelId, m.label).id !==
+            hiddenGroupId,
+        )
         : models;
       const sortedModels = [...filteredModels].sort((a, b) => {
         const groupA = this.strategyManager.getGroupForModel(
@@ -704,12 +754,15 @@ export class AppViewModel implements vscode.Disposable {
       totalSize: cache.totalSize,
       brainSize: cache.brainSize,
       conversationsSize: cache.conversationsSize,
+      codeContextsSize: cache.codeContextsSize,
       brainCount: cache.brainCount,
       formattedTotal: formatBytes(cache.totalSize),
       formattedBrain: formatBytes(cache.brainSize),
       formattedConversations: formatBytes(cache.conversationsSize),
+      formattedCodeContexts: formatBytes(cache.codeContextsSize),
     };
     await this.updateTaskTreeState(cache.brainTasks);
+    await this.updateConversationsTreeState(cache.conversations);
     await this.updateContextTreeState(cache.codeContexts);
     await this.updateResourcesTreeState(cache.storageItems || []);
     await this.storageService.setLastCacheSize(cache.totalSize);
@@ -735,6 +788,18 @@ export class AppViewModel implements vscode.Disposable {
       label: ctx.name || ctx.id,
       size: formatBytes(ctx.size),
       expanded: this._expandedContexts.has(ctx.id),
+      loading: false,
+      files: [],
+    }));
+  }
+
+  private async updateConversationsTreeState(conversations: BrainTask[]): Promise<void> {
+    this._state.tree.conversations.folders = conversations.map((conv) => ({
+      id: conv.id,
+      label: conv.label || `Conversation ${conv.id.split("-")[0]}`,
+      size: formatBytes(conv.size),
+      lastModified: conv.createdAt,
+      expanded: this._expandedConversations.has(conv.id),
       loading: false,
       files: [],
     }));
@@ -792,15 +857,15 @@ export class AppViewModel implements vscode.Disposable {
       (g) => g.id === this._state.quota.activeGroupId,
     ) ||
       allGroups[0] || {
-        id: "unknown",
-        label: "Unknown",
-        shortLabel: "N/A",
-        percentage: 0,
-        resetTime: "N/A",
-        color: "#888",
-        usageRate: 0,
-        runway: "Stable",
-      };
+      id: "unknown",
+      label: "Unknown",
+      shortLabel: "N/A",
+      percentage: 0,
+      resetTime: "N/A",
+      color: "#888",
+      usageRate: 0,
+      runway: "Stable",
+    };
     return { primary, allGroups };
   }
 
@@ -828,6 +893,7 @@ export class AppViewModel implements vscode.Disposable {
       user: this._state.user,
       tokenUsage: this._state.tokenUsage,
       tasks: this._state.tree.tasks,
+      conversations: this._state.tree.conversations,
       contexts: this._state.tree.contexts,
       resources: this._state.tree.resources,
       connectionStatus: this._state.connectionStatus,

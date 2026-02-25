@@ -76,10 +76,12 @@ export interface CacheViewState {
     totalSize: number;
     brainSize: number;
     conversationsSize: number;
+    codeContextsSize: number;
     brainCount: number;
     formattedTotal: string;
     formattedBrain: string;
     formattedConversations: string;
+    formattedCodeContexts: string;
 }
 
 // ==================== Tree View State ====================
@@ -106,6 +108,7 @@ export interface TreeSectionState {
 
 export interface TreeViewState {
     tasks: TreeSectionState;
+    conversations: TreeSectionState;
     contexts: TreeSectionState;
     resources: TreeSectionState;
 }
@@ -118,7 +121,7 @@ export interface StatusBarGroupItem {
     shortLabel: string;
     percentage: number;
     resetTime: string;
-    resetDate?: Date; 
+    resetDate?: Date;
     color: string;
     usageRate: number;
     runway: string;
@@ -180,6 +183,7 @@ export interface SidebarData {
     user?: UserViewState;
     tokenUsage?: TokenUsageViewState;
     tasks: TreeSectionState;
+    conversations: TreeSectionState;
     contexts: TreeSectionState;
     resources: TreeSectionState;
     connectionStatus: ConnectionStatus;

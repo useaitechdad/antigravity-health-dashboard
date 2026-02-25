@@ -26,6 +26,7 @@ Your **Context Window** is your most valuable resource. This dashboard helps you
 - **Brain Management**: Identify "heavy" tasks (e.g., >200KB) that are consuming your context window.
   - **Single Delete**: Click the **Trash Emoji (🗑️)** on the left of any task to delete it surgically.
   - **Clear Cache**: Use the "Clear Cache" button in the footer to automatically prune all but the 5 most recent tasks.
+- **Agent Conversations**: See how much memory your chat histories are consuming at a glance. (Note: Deletion of individual chats should be done safely via the Antigravity Agent Manager UI).
 - **Code Tracker**: See which project folders are indexed. Unlink unused contexts to prevent the agent from searching irrelevant code.
 - **Resource Monitoring**: Track workspace-level configurations including Rules, Workflows, and Skills with expandable file listings.
 

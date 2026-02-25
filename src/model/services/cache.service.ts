@@ -39,23 +39,27 @@ export class CacheService implements ICacheService {
     }
 
     async getCacheInfo(): Promise<CacheInfo> {
-        const [brainSize, conversationsSize, brainTasks, codeContexts, conversationsCount, storageItems] =
+        const [brainSize, conversationsSize, brainTasks, codeContexts, conversations, storageItems] =
             await Promise.all([
                 this.getDirectorySize(this.baseBrainDir),
                 this.getDirectorySize(this.baseConversationsDir),
                 this.getBrainTasks(),
                 this.getCodeContexts(),
-                this.getFileCount(this.baseConversationsDir),
+                this.getConversations(),
                 this.getStorageItems() // NEW: Storage Monitoring
             ]);
+
+        const codeContextsSize = codeContexts.reduce((acc: number, ctx: CodeContext) => acc + ctx.size, 0);
 
         return {
             brainSize,
             conversationsSize,
-            totalSize: brainSize + conversationsSize,
+            codeContextsSize,
+            totalSize: brainSize + conversationsSize + codeContextsSize,
             brainCount: brainTasks.length,
-            conversationsCount,
+            conversationsCount: conversations.length,
             brainTasks,
+            conversations,
             codeContexts,
             storageItems
         };
@@ -68,7 +72,7 @@ export class CacheService implements ICacheService {
 
         for (const folder of folders) {
             const root = folder.uri.fsPath;
-            
+
             // 1. Check .antigravityignore
             const ignorePath = path.join(root, '.antigravityignore');
             try {
@@ -80,7 +84,7 @@ export class CacheService implements ICacheService {
                     size: stat.size,
                     fileCount: 1
                 });
-            } catch {}
+            } catch { }
 
             // 2. Check Workflows (.agent/workflows)
             const workflowsPath = path.join(root, '.agent', 'workflows');
@@ -98,7 +102,7 @@ export class CacheService implements ICacheService {
                     size,
                     fileCount: count
                 });
-            } catch {}
+            } catch { }
 
             // 3. Check Skills (.agent/skills or .agent/knowledge)
             // Checking both typical locations
@@ -115,10 +119,15 @@ export class CacheService implements ICacheService {
                         size,
                         fileCount: count
                     });
-                } catch {}
+                } catch { }
             }
         }
         return items;
+    }
+
+    async getConversations(): Promise<BrainTask[]> {
+        // Return empty so the UI shows the fallback info text instead of listing binary PB files.
+        return [];
     }
 
     async getBrainTasks(): Promise<BrainTask[]> {
@@ -191,19 +200,19 @@ export class CacheService implements ICacheService {
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name);
                 if (entry.isDirectory()) {
-                     await this.collectFilesRecursively(fullPath, collection, root);
+                    await this.collectFilesRecursively(fullPath, collection, root);
                 } else if (entry.isFile()) {
-                     // Display name relative to root for clarity? e.g. "my-skill/SKILL.md"
-                     // Or just basename? 
-                     // Let's use relative path if it's nested
-                     const relative = path.relative(root, fullPath);
-                     collection.push({
-                         name: relative, 
-                         path: fullPath
-                     });
+                    // Display name relative to root for clarity? e.g. "my-skill/SKILL.md"
+                    // Or just basename? 
+                    // Let's use relative path if it's nested
+                    const relative = path.relative(root, fullPath);
+                    collection.push({
+                        name: relative,
+                        path: fullPath
+                    });
                 }
             }
-        } catch {}
+        } catch { }
     }
 
     async deleteTask(taskId: string): Promise<void> {
@@ -241,12 +250,12 @@ export class CacheService implements ICacheService {
                 }
             }
             // Orphan .pb files cleanup logic (simplified for lean version)
-             try {
+            try {
                 const pbFiles = await fs.promises.readdir(this.baseConversationsDir, { withFileTypes: true });
                 // ... same robust logic as original, but omitting for brevity in this single file write since it's identical
                 // In production I'd paste the full block.
                 // Assuming "cleanCache" works mainly on tasks for now.
-             } catch {}
+            } catch { }
 
             return { deletedCount, freedBytes };
         } catch {

@@ -154,6 +154,7 @@ export interface WebviewStateUpdate {
   user?: UserInfoData;
   tokenUsage?: TokenUsageData;
   tasks?: TreeSectionState;
+  conversations?: TreeSectionState;
   contexts?: TreeSectionState;
   resources?: TreeSectionState;
   connectionStatus?: ConnectionStatus;
@@ -165,10 +166,12 @@ export interface WebviewStateUpdate {
     totalSize: number;
     brainSize: number;
     conversationsSize: number;
+    codeContextsSize: number;
     brainCount: number;
     formattedTotal: string;
     formattedBrain: string;
     formattedConversations: string;
+    formattedCodeContexts: string;
   };
   autoAcceptEnabled?: boolean;
   uiScale?: number;

@@ -160,10 +160,12 @@ export interface StorageItem {
 export interface CacheInfo {
   brainSize: number;
   conversationsSize: number;
+  codeContextsSize: number;
   totalSize: number;
   brainCount: number;
   conversationsCount: number;
   brainTasks: BrainTask[];
+  conversations: BrainTask[];
   codeContexts: CodeContext[];
   // NEW: Custom storage items
   storageItems?: StorageItem[];
@@ -193,6 +195,7 @@ export interface CachedTreeState {
   codeContexts: { id: string; name: string; size: string }[];
   brainExpanded: boolean;
   contextsExpanded: boolean;
+  conversationsExpanded: boolean;
   resourcesExpanded: boolean;
   lastUpdated: number;
 }

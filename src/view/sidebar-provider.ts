@@ -92,6 +92,9 @@ export class SidebarProvider
       case "deleteContext":
         if (msg.contextId) this._viewModel.deleteContext(msg.contextId);
         break;
+      case "deleteConversation":
+        if (msg.folderId) this._viewModel.deleteConversation(msg.folderId);
+        break;
       case "deleteFile":
         if (msg.path) this._viewModel.deleteFile(msg.path);
         break;
@@ -102,8 +105,15 @@ export class SidebarProvider
         if (msg.contextId)
           this._viewModel.toggleContextExpansion(msg.contextId);
         break;
+      case "toggleConversation":
+        if (msg.folderId)
+          this._viewModel.toggleConversationExpansion(msg.folderId);
+        break;
       case "toggleTasks":
         this._viewModel.toggleTasksSection();
+        break;
+      case "toggleConversations":
+        this._viewModel.toggleConversationsSection();
         break;
       case "toggleProjects":
         this._viewModel.toggleContextsSection();
@@ -243,8 +253,10 @@ export class SidebarProvider
         usageHistory: vscode.l10n.t("Usage History"),
         max: vscode.l10n.t("max"),
         brain: vscode.l10n.t("Brain"),
+        conversations: vscode.l10n.t("Agent Conversations"),
         codeTracker: vscode.l10n.t("Workspace Code Context"),
         noTasksFound: vscode.l10n.t("No tasks found"),
+        noConversationsFound: vscode.l10n.t("This measures your chat memory usage with Antigravity. You can use the agent manager screen within Antigravity to easily delete conversations, so the deletion function is not provided here."),
         noCacheFound: vscode.l10n.t("No code context cache"),
         extensionVersion: this._extensionVersion,
       })

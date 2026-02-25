@@ -75,6 +75,15 @@ export class SidebarApp extends LitElement {
   };
 
   @state()
+  private _conversations: TreeSectionState = {
+    title: 'Agent Conversations',
+    stats: 'Loading...',
+    collapsed: true,
+    folders: [],
+    loading: true
+  };
+
+  @state()
   private _contexts: TreeSectionState = {
     title: 'Workspace Code Context',
     stats: 'Loading...',
@@ -228,12 +237,22 @@ export class SidebarApp extends LitElement {
         loading: false
       };
     }
+    if (state.conversations) {
+      const backendConversations = state.conversations as TreeSectionState & { expanded?: boolean };
+      this._conversations = {
+        title: 'Agent Conversations',
+        stats: this._cache?.formattedConversations || `${backendConversations.folders?.length || 0} Conversations`,
+        collapsed: !backendConversations.expanded,
+        folders: backendConversations.folders || [],
+        loading: false
+      };
+    }
     if (state.contexts) {
       // Adapter: Backend (expanded) -> Frontend (collapsed)
       const backendContexts = state.contexts as TreeSectionState & { expanded?: boolean };
       this._contexts = {
         title: 'Workspace Code Context',
-        stats: this._cache?.formattedConversations || `${backendContexts.folders?.length || 0} Projects`,
+        stats: this._cache?.formattedCodeContexts || `${backendContexts.folders?.length || 0} Projects`,
         collapsed: !backendContexts.expanded, // Invert logic
         folders: backendContexts.folders || [],
         loading: false
@@ -293,6 +312,8 @@ export class SidebarApp extends LitElement {
 
     if (title === 'Brain') {
       this._vscode.postMessage({ type: 'toggleTask', taskId: e.detail.folderId });
+    } else if (title === 'Agent Conversations') {
+      this._vscode.postMessage({ type: 'toggleConversation', folderId: e.detail.folderId });
     } else if (title === 'Workspace Code Context') {
       this._vscode.postMessage({ type: 'toggleContext', contextId: e.detail.folderId });
     } else {
@@ -305,6 +326,8 @@ export class SidebarApp extends LitElement {
 
     if (title === 'Brain') {
       this._vscode.postMessage({ type: 'deleteTask', taskId: e.detail.folderId });
+    } else if (title === 'Agent Conversations') {
+      this._vscode.postMessage({ type: 'deleteConversation', folderId: e.detail.folderId });
     } else if (title === 'Workspace Code Context') {
       this._vscode.postMessage({ type: 'deleteContext', contextId: e.detail.folderId });
     }
@@ -327,6 +350,10 @@ export class SidebarApp extends LitElement {
 
   private _onToggleTasks(): void {
     this._vscode.postMessage({ type: 'toggleTasks' });
+  }
+
+  private _onToggleConversations(): void {
+    this._vscode.postMessage({ type: 'toggleConversations' });
   }
 
   private _onToggleContexts(): void {
@@ -389,6 +416,16 @@ export class SidebarApp extends LitElement {
           @toggle=${this._onToggleTasks}
         ></folder-tree>
         
+        <folder-tree
+          title="${(window as unknown as WindowWithVsCode).__TRANSLATIONS__?.conversations || 'Agent Conversations'}"
+          .stats=${this._conversations.stats}
+          ?collapsed=${this._conversations.collapsed}
+          ?loading=${this._conversations.loading}
+          .folders=${this._conversations.folders}
+          emptyText="${(window as unknown as WindowWithVsCode).__TRANSLATIONS__?.noConversationsFound || 'No conversations found'}"
+          @toggle=${this._onToggleConversations}
+        ></folder-tree>
+
         <folder-tree
           title="${(window as unknown as WindowWithVsCode).__TRANSLATIONS__?.codeTracker || 'Workspace Code Context'}"
           .stats=${this._contexts.stats}
