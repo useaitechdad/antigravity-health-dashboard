@@ -47,6 +47,7 @@ export interface ICacheService {
     deleteContext(contextId: string): Promise<void>;
     deleteFile(filePath: string): Promise<void>;
     cleanCache(keepCount?: number): Promise<{ deletedCount: number, freedBytes: number }>;
+    clearBrowserRecordings(): Promise<{ deletedCount: number; freedBytes: number }>;
 }
 
 export interface IStorageService {

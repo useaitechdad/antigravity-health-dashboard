@@ -23,7 +23,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { getBrainDir, getConversationsDir, getCodeContextsDir } from '../../shared/utils/paths';
+import {
+    getBrainDir,
+    getConversationsDir,
+    getCodeContextsDir,
+    getKnowledgeDir,
+    getBrowserRecordingsDir,
+    getImplicitDir,
+} from '../../shared/utils/paths';
 import type { ICacheService } from './interfaces';
 import type { BrainTask, CacheInfo, CodeContext, FileItem, StorageItem } from '../../shared/utils/types';
 
@@ -31,41 +38,65 @@ export class CacheService implements ICacheService {
     private baseBrainDir: string;
     private baseConversationsDir: string;
     private baseCodeContextsDir: string;
+    private baseKnowledgeDir: string;
+    private baseBrowserRecordingsDir: string;
+    private baseImplicitDir: string;
 
     constructor(brainDir?: string, conversationsDir?: string, codeContextsDir?: string) {
         this.baseBrainDir = brainDir || getBrainDir();
         this.baseConversationsDir = conversationsDir || getConversationsDir();
         this.baseCodeContextsDir = codeContextsDir || getCodeContextsDir();
+        this.baseKnowledgeDir = getKnowledgeDir();
+        this.baseBrowserRecordingsDir = getBrowserRecordingsDir();
+        this.baseImplicitDir = getImplicitDir();
     }
 
     async getCacheInfo(): Promise<CacheInfo> {
-        const [brainSize, conversationsSize, brainTasks, codeContexts, conversations, storageItems] =
-            await Promise.all([
-                this.getDirectorySize(this.baseBrainDir),
-                this.getDirectorySize(this.baseConversationsDir),
-                this.getBrainTasks(),
-                this.getCodeContexts(),
-                this.getConversations(),
-                this.getStorageItems() // NEW: Storage Monitoring
-            ]);
-
-        const codeContextsSize = codeContexts.reduce((acc: number, ctx: CodeContext) => acc + ctx.size, 0);
+        const [
+            brainSize,
+            conversationsSize,
+            implicitSize,
+            knowledgeSize,
+            browserRecordingsSize,
+            brainTasks,
+            codeContexts,
+            conversations,
+            recordingSessions,
+            knowledgeEntries,
+            storageItems,
+        ] = await Promise.all([
+            this.getDirectorySize(this.baseBrainDir),
+            this.getDirectorySize(this.baseConversationsDir),
+            this.getDirectorySize(this.baseImplicitDir),
+            this.getDirectorySize(this.baseKnowledgeDir),
+            this.getDirectorySize(this.baseBrowserRecordingsDir),
+            this.getBrainTasks(),
+            this.getCodeContexts(),
+            this.getConversations(),
+            this.getRecordingSessions(),
+            this.getKnowledgeEntries(),
+            this.getStorageItems(),
+        ]);
 
         return {
             brainSize,
             conversationsSize,
-            codeContextsSize,
-            totalSize: brainSize + conversationsSize + codeContextsSize,
+            implicitSize,
+            knowledgeSize,
+            browserRecordingsSize,
+            totalSize: brainSize + conversationsSize + implicitSize + knowledgeSize + browserRecordingsSize,
             brainCount: brainTasks.length,
             conversationsCount: conversations.length,
             brainTasks,
             conversations,
             codeContexts,
-            storageItems
+            recordingSessions,
+            knowledgeEntries,
+            storageItems,
         };
     }
 
-    // NEW: Monitor storage of Rules, Workflows, Skills
+    // Monitor storage of Rules, Workflows, Skills, Knowledge
     private async getStorageItems(): Promise<StorageItem[]> {
         const items: StorageItem[] = [];
         const folders = vscode.workspace.workspaceFolders || [];
@@ -86,26 +117,51 @@ export class CacheService implements ICacheService {
                 });
             } catch { }
 
-            // 2. Check Workflows (.agent/workflows)
-            const workflowsPath = path.join(root, '.agent', 'workflows');
+            // 2. Check GEMINI.md (project-level rules)
+            const geminiPath = path.join(root, 'GEMINI.md');
             try {
-                const size = await this.getDirectorySize(workflowsPath);
-                // Only add if it exists/has size, or check existence explicitly
-                // getDirectorySize returns 0 if error/not exist. 
-                // We should check if it exists to be precise.
-                await fs.promises.access(workflowsPath);
-                const count = await this.getFileCount(workflowsPath);
+                const stat = await fs.promises.stat(geminiPath);
                 items.push({
-                    name: 'Workflows',
-                    type: 'workflow',
-                    path: workflowsPath,
-                    size,
-                    fileCount: count
+                    name: 'GEMINI.md',
+                    type: 'rule',
+                    path: geminiPath,
+                    size: stat.size,
+                    fileCount: 1
                 });
             } catch { }
 
-            // 3. Check Skills (.agent/skills or .agent/knowledge)
-            // Checking both typical locations
+            // 3. Check AGENTS.md (project-level rules, v1.20.5+)
+            const agentsPath = path.join(root, 'AGENTS.md');
+            try {
+                const stat = await fs.promises.stat(agentsPath);
+                items.push({
+                    name: 'AGENTS.md',
+                    type: 'rule',
+                    path: agentsPath,
+                    size: stat.size,
+                    fileCount: 1
+                });
+            } catch { }
+
+            // 4. Check Workflows (.agent/workflows or .agents/workflows)
+            for (const agentDir of ['.agent', '.agents']) {
+                const workflowsPath = path.join(root, agentDir, 'workflows');
+                try {
+                    await fs.promises.access(workflowsPath);
+                    const size = await this.getDirectorySize(workflowsPath);
+                    const count = await this.getFileCount(workflowsPath);
+                    items.push({
+                        name: 'Workflows',
+                        type: 'workflow',
+                        path: workflowsPath,
+                        size,
+                        fileCount: count
+                    });
+                    break; // Only add once
+                } catch { }
+            }
+
+            // 5. Check Skills (.agent/skills or .agent/knowledge)
             for (const sub of ['skills', 'knowledge']) {
                 const skillsPath = path.join(root, '.agent', sub);
                 try {
@@ -122,6 +178,33 @@ export class CacheService implements ICacheService {
                 } catch { }
             }
         }
+
+        // 6. Global Knowledge Base
+        try {
+            await fs.promises.access(this.baseKnowledgeDir);
+            const entries = await fs.promises.readdir(this.baseKnowledgeDir, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const kbPath = path.join(this.baseKnowledgeDir, entry.name);
+                const size = await this.getDirectorySize(kbPath);
+                // Parse metadata for a nice label
+                let label = entry.name.replace(/_/g, ' ');
+                try {
+                    const metaPath = path.join(kbPath, 'metadata.json');
+                    const metaContent = await fs.promises.readFile(metaPath, 'utf-8');
+                    const meta = JSON.parse(metaContent);
+                    if (meta.title) label = meta.title;
+                } catch { }
+                items.push({
+                    name: `📚 ${label}`,
+                    type: 'knowledge',
+                    path: kbPath,
+                    size,
+                    fileCount: await this.getFileCountRecursive(kbPath)
+                });
+            }
+        } catch { }
+
         return items;
     }
 
@@ -161,6 +244,9 @@ export class CacheService implements ICacheService {
     }
 
     async getCodeContexts(): Promise<CodeContext[]> {
+        // Code tracker has been deprecated by Antigravity (~Feb 2026).
+        // The code_tracker/active directory is empty.
+        // Return empty array to avoid scanning a dead directory.
         try {
             const entries = await fs.promises.readdir(this.baseCodeContextsDir, { withFileTypes: true });
             const contexts: CodeContext[] = [];
@@ -168,7 +254,6 @@ export class CacheService implements ICacheService {
                 if (!entry.isDirectory()) continue;
                 const contextPath = path.join(this.baseCodeContextsDir, entry.name);
                 const size = await this.getDirectorySize(contextPath);
-                // Clean name: Name_HASH -> Name
                 const cleanName = entry.name.replace(/_([a-f0-9]{32,40})$/, '');
                 contexts.push({ id: entry.name, name: cleanName, size });
             }
@@ -202,9 +287,6 @@ export class CacheService implements ICacheService {
                 if (entry.isDirectory()) {
                     await this.collectFilesRecursively(fullPath, collection, root);
                 } else if (entry.isFile()) {
-                    // Display name relative to root for clarity? e.g. "my-skill/SKILL.md"
-                    // Or just basename? 
-                    // Let's use relative path if it's nested
                     const relative = path.relative(root, fullPath);
                     collection.push({
                         name: relative,
@@ -231,6 +313,27 @@ export class CacheService implements ICacheService {
         await fs.promises.rm(filePath, { force: true });
     }
 
+    /**
+     * Clear all browser recording files.
+     * These are screenshot captures from the Antigravity embedded browser.
+     */
+    async clearBrowserRecordings(): Promise<{ deletedCount: number; freedBytes: number }> {
+        let deletedCount = 0;
+        let freedBytes = 0;
+        try {
+            const entries = await fs.promises.readdir(this.baseBrowserRecordingsDir, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const dirPath = path.join(this.baseBrowserRecordingsDir, entry.name);
+                const size = await this.getDirectorySize(dirPath);
+                await fs.promises.rm(dirPath, { recursive: true, force: true });
+                freedBytes += size;
+                deletedCount++;
+            }
+        } catch { }
+        return { deletedCount, freedBytes };
+    }
+
     async cleanCache(keepCount: number = 5): Promise<{ deletedCount: number, freedBytes: number }> {
         try {
             let deletedCount = 0;
@@ -249,12 +352,20 @@ export class CacheService implements ICacheService {
                     deletedCount++;
                 }
             }
-            // Orphan .pb files cleanup logic (simplified for lean version)
+
+            // Clean orphan .tmp files from conversations directory
             try {
-                const pbFiles = await fs.promises.readdir(this.baseConversationsDir, { withFileTypes: true });
-                // ... same robust logic as original, but omitting for brevity in this single file write since it's identical
-                // In production I'd paste the full block.
-                // Assuming "cleanCache" works mainly on tasks for now.
+                const files = await fs.promises.readdir(this.baseConversationsDir, { withFileTypes: true });
+                for (const file of files) {
+                    if (!file.isFile()) continue;
+                    if (file.name.endsWith('.tmp')) {
+                        const tmpPath = path.join(this.baseConversationsDir, file.name);
+                        const tmpStat = await fs.promises.stat(tmpPath);
+                        freedBytes += tmpStat.size;
+                        await fs.promises.rm(tmpPath, { force: true });
+                        deletedCount++;
+                    }
+                }
             } catch { }
 
             return { deletedCount, freedBytes };
@@ -285,6 +396,20 @@ export class CacheService implements ICacheService {
         } catch { return 0; }
     }
 
+    private async getFileCountRecursive(dirPath: string): Promise<number> {
+        let count = 0;
+        try {
+            const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+            for (const entry of entries) {
+                if (entry.isFile()) count++;
+                else if (entry.isDirectory()) {
+                    count += await this.getFileCountRecursive(path.join(dirPath, entry.name));
+                }
+            }
+        } catch { }
+        return count;
+    }
+
     private async getTaskLabel(taskPath: string, fallbackId: string): Promise<string> {
         try {
             const taskMdPath = path.join(taskPath, 'task.md');
@@ -303,7 +428,6 @@ export class CacheService implements ICacheService {
             const files: FileItem[] = [];
             for (const entry of entries) {
                 if (!entry.isFile()) continue;
-                // Clean name: HASH_Name -> Name
                 const cleanName = entry.name.replace(/^([a-f0-9]{32})_/, '');
                 files.push({
                     name: cleanName,
@@ -314,5 +438,57 @@ export class CacheService implements ICacheService {
         } catch {
             return [];
         }
+    }
+
+    private async getRecordingSessions(): Promise<BrainTask[]> {
+        const sessions: BrainTask[] = [];
+        try {
+            const entries = await fs.promises.readdir(this.baseBrowserRecordingsDir, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const sessionPath = path.join(this.baseBrowserRecordingsDir, entry.name);
+                const size = await this.getDirectorySize(sessionPath);
+                const fileCount = await this.getFileCount(sessionPath);
+                sessions.push({
+                    id: entry.name,
+                    label: `Session ${entry.name.substring(0, 8)}… (${fileCount} screenshots)`,
+                    path: sessionPath,
+                    size,
+                    fileCount,
+                    createdAt: 0,
+                });
+            }
+        } catch { /* dir may not exist */ }
+        return sessions.sort((a, b) => b.size - a.size);
+    }
+
+    private async getKnowledgeEntries(): Promise<BrainTask[]> {
+        const knowledgeEntries: BrainTask[] = [];
+        try {
+            const dirs = await fs.promises.readdir(this.baseKnowledgeDir, { withFileTypes: true });
+            for (const dir of dirs) {
+                if (!dir.isDirectory()) continue;
+                const entryPath = path.join(this.baseKnowledgeDir, dir.name);
+                const metadataPath = path.join(entryPath, 'metadata.json');
+                let label = dir.name.substring(0, 12) + '…';
+                try {
+                    const metadata = JSON.parse(await fs.promises.readFile(metadataPath, 'utf-8'));
+                    if (metadata.title) label = metadata.title;
+                    else if (metadata.name) label = metadata.name;
+                    else if (metadata.displayName) label = metadata.displayName;
+                } catch { /* no metadata */ }
+                const size = await this.getDirectorySize(entryPath);
+                const fileCount = await this.getFileCount(entryPath);
+                knowledgeEntries.push({
+                    id: dir.name,
+                    label,
+                    path: entryPath,
+                    size,
+                    fileCount,
+                    createdAt: 0,
+                });
+            }
+        } catch { /* dir may not exist */ }
+        return knowledgeEntries.sort((a, b) => a.label.localeCompare(b.label));
     }
 }

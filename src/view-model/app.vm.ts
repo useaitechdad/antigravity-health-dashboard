@@ -38,6 +38,7 @@ import type { QuotaStrategyManager } from "../model/strategy";
 import type { ConfigManager } from "../shared/config/config_manager";
 import { formatBytes } from "../shared/utils/format";
 import { QUOTA_RESET_HOURS } from "../shared/utils/constants";
+import type { AvailableCredit } from "../shared/utils/types";
 import type {
   AppState,
   QuotaViewState,
@@ -52,6 +53,7 @@ import type {
   UsageBucket,
   TokenUsageViewState,
   ConnectionStatus,
+  AgProcessInfo,
 } from "./types";
 
 export type {
@@ -134,19 +136,26 @@ export class AppViewModel implements vscode.Disposable {
         totalSize: 0,
         brainSize: 0,
         conversationsSize: 0,
-        codeContextsSize: 0,
+        implicitSize: 0,
+        knowledgeSize: 0,
+        browserRecordingsSize: 0,
         brainCount: 0,
         formattedTotal: "0 B",
         formattedBrain: "0 B",
         formattedConversations: "0 B",
-        formattedCodeContexts: "0 B",
+        formattedImplicit: "0 B",
+        formattedKnowledge: "0 B",
+        formattedBrowserRecordings: "0 B",
       },
       tree: {
         tasks: { expanded: false, folders: [] },
         conversations: { expanded: false, folders: [] },
         contexts: { expanded: false, folders: [] },
+        recordings: { expanded: false, folders: [] },
+        knowledge: { expanded: false, folders: [] },
         resources: { expanded: false, folders: [] },
       },
+      agProcesses: [],
       connectionStatus: "detecting",
       lastUpdated: 0,
     };
@@ -160,6 +169,9 @@ export class AppViewModel implements vscode.Disposable {
     if (quota) await this.updateQuotaState(quota);
     if (cache) await this.updateCacheState(cache);
     this._state.lastUpdated = Date.now();
+    try {
+      this._state.agProcesses = await this.getAgProcesses();
+    } catch { /* ignore */ }
     this._onStateChange.fire(this._state);
   }
 
@@ -179,6 +191,9 @@ export class AppViewModel implements vscode.Disposable {
       await this.updateCacheState(cache);
       this._onCacheChange.fire(this._state.cache);
       this._onTreeChange.fire(this._state.tree);
+      try {
+        this._state.agProcesses = await this.getAgProcesses();
+      } catch { /* ignore */ }
       this._onStateChange.fire(this._state);
     }
   }
@@ -187,6 +202,12 @@ export class AppViewModel implements vscode.Disposable {
     keepCount?: number,
   ): Promise<{ deletedCount: number; freedBytes: number }> {
     const result = await this.cacheService.cleanCache(keepCount);
+    await this.refreshCache();
+    return result;
+  }
+
+  async clearBrowserRecordings(): Promise<{ deletedCount: number; freedBytes: number }> {
+    const result = await this.cacheService.clearBrowserRecordings();
     await this.refreshCache();
     return result;
   }
@@ -457,6 +478,8 @@ export class AppViewModel implements vscode.Disposable {
         knowledgeBaseEnabled: snapshot.userInfo.knowledgeBaseEnabled,
         upgradeUri: snapshot.userInfo.upgradeUri,
         upgradeText: snapshot.userInfo.upgradeText,
+        cascadeWebSearchEnabled: snapshot.userInfo.cascadeWebSearchEnabled,
+        availableCredits: snapshot.userInfo.availableCredits,
       };
     }
 
@@ -754,16 +777,22 @@ export class AppViewModel implements vscode.Disposable {
       totalSize: cache.totalSize,
       brainSize: cache.brainSize,
       conversationsSize: cache.conversationsSize,
-      codeContextsSize: cache.codeContextsSize,
+      implicitSize: cache.implicitSize,
+      knowledgeSize: cache.knowledgeSize,
+      browserRecordingsSize: cache.browserRecordingsSize,
       brainCount: cache.brainCount,
       formattedTotal: formatBytes(cache.totalSize),
       formattedBrain: formatBytes(cache.brainSize),
       formattedConversations: formatBytes(cache.conversationsSize),
-      formattedCodeContexts: formatBytes(cache.codeContextsSize),
+      formattedImplicit: formatBytes(cache.implicitSize),
+      formattedKnowledge: formatBytes(cache.knowledgeSize),
+      formattedBrowserRecordings: formatBytes(cache.browserRecordingsSize),
     };
     await this.updateTaskTreeState(cache.brainTasks);
     await this.updateConversationsTreeState(cache.conversations);
     await this.updateContextTreeState(cache.codeContexts);
+    await this.updateRecordingsTreeState(cache.recordingSessions);
+    await this.updateKnowledgeTreeState(cache.knowledgeEntries);
     await this.updateResourcesTreeState(cache.storageItems || []);
     await this.storageService.setLastCacheSize(cache.totalSize);
     await this.persistTreeState();
@@ -791,6 +820,73 @@ export class AppViewModel implements vscode.Disposable {
       loading: false,
       files: [],
     }));
+  }
+
+  private async updateRecordingsTreeState(sessions: BrainTask[]): Promise<void> {
+    this._state.tree.recordings.folders = sessions.map((s) => ({
+      id: s.id,
+      label: s.label || `Session ${s.id.substring(0, 8)}`,
+      size: formatBytes(s.size),
+      expanded: false,
+      loading: false,
+      files: [],
+    }));
+  }
+
+  private async updateKnowledgeTreeState(entries: BrainTask[]): Promise<void> {
+    this._state.tree.knowledge.folders = entries.map((e) => ({
+      id: e.id,
+      label: e.label || e.id.substring(0, 12),
+      size: formatBytes(e.size),
+      expanded: false,
+      loading: false,
+      files: [],
+    }));
+  }
+
+  async getAgProcesses(): Promise<AgProcessInfo[]> {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const processes: AgProcessInfo[] = [];
+    try {
+      const cmd = process.platform === 'win32'
+        ? 'powershell -NoProfile -Command "Get-Process | Where-Object { $_.ProcessName -match \'language_server|antigravity|pyrefly\' } | Select-Object Id,ProcessName,Path | Format-List"'
+        : 'ps -A -o pid,ppid,command | grep -E "language_server|antigravity-browser|pyrefly" | grep -v grep';
+      const { stdout } = await execAsync(cmd, { timeout: 5000 });
+      const lines = stdout.trim().split('\n');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const match = line.trim().match(/^\s*(\d+)\s+(\d+)\s+(.+)$/);
+        if (!match) continue;
+        const pid = parseInt(match[1], 10);
+        const cmd = match[3];
+        let type: AgProcessInfo['type'] = 'unknown';
+        let name = 'Unknown Process';
+        if (cmd.includes('language_server')) {
+          type = 'language_server';
+          const wsMatch = cmd.match(/--workspace_id\s+(\S+)/);
+          name = wsMatch ? `Language Server (${wsMatch[1].replace(/^file_/, '').substring(0, 30)})` : 'Language Server';
+        } else if (cmd.includes('antigravity-browser') || (cmd.includes('Chrome') && cmd.includes('antigravity'))) {
+          type = 'browser';
+          name = 'AG Browser (Chrome)';
+        } else if (cmd.includes('pyrefly')) {
+          type = 'extension';
+          name = 'Pyrefly LSP';
+        }
+        processes.push({ pid, name, command: cmd.substring(0, 120), type });
+      }
+    } catch { /* ignore */ }
+    return processes;
+  }
+
+  async killProcess(pid: number): Promise<boolean> {
+    try {
+      process.kill(pid, 'SIGTERM');
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async updateConversationsTreeState(conversations: BrainTask[]): Promise<void> {
@@ -895,7 +991,10 @@ export class AppViewModel implements vscode.Disposable {
       tasks: this._state.tree.tasks,
       conversations: this._state.tree.conversations,
       contexts: this._state.tree.contexts,
+      recordings: this._state.tree.recordings,
+      knowledge: this._state.tree.knowledge,
       resources: this._state.tree.resources,
+      agProcesses: this._state.agProcesses,
       connectionStatus: this._state.connectionStatus,
       failureReason: this._state.failureReason,
       gaugeStyle: config["dashboard.gaugeStyle"],

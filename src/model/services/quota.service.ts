@@ -218,6 +218,9 @@ export class QuotaService implements IQuotaService {
             canBuyMoreCredits: planInfo?.canBuyMoreCredits,
             monthlyPromptCredits: planInfo?.monthlyPromptCredits,
             availablePromptCredits: availableCredits,
+            cascadeWebSearchEnabled: planInfo?.cascadeWebSearchEnabled,
+            canAllowCascadeInBackground: planInfo?.canAllowCascadeInBackground,
+            availableCredits: userTier?.availableCredits,
         } : undefined;
 
         const rawModels = userStatus.cascadeModelConfigData?.clientModelConfigs || [];
@@ -243,6 +246,9 @@ export class QuotaService implements IQuotaService {
                     isExhausted: remainingFraction === 0,
                     resetTime,
                     timeUntilReset: this.formatTime(diff, resetTime, showAbsoluteTime),
+                    supportsImages: m.supportsImages,
+                    isRecommended: m.isRecommended,
+                    tagTitle: m.tagTitle,
                 };
             });
 
@@ -283,18 +289,30 @@ interface RawModelConfig {
         remainingFraction?: number;
         resetTime: string;
     };
+    supportsImages?: boolean;
+    isRecommended?: boolean;
+    tagTitle?: string;
+    allowedTiers?: string[];
+    supportedMimeTypes?: Record<string, boolean>;
 }
 
 interface ServerUserStatusResponse {
     userStatus: {
         name?: string;
         email?: string;
+        disableTelemetry?: boolean;
+        acceptedLatestTermsOfService?: boolean;
         userTier?: {
             id?: string;
             name?: string;
             description?: string;
             upgradeSubscriptionUri?: string;
             upgradeSubscriptionText?: string;
+            availableCredits?: {
+                creditType: string;
+                creditAmount: string;
+                minimumCreditAmountForUsage?: string;
+            }[];
         };
         planStatus?: {
             planInfo: {
@@ -305,12 +323,27 @@ interface ServerUserStatusResponse {
                 browserEnabled?: boolean;
                 knowledgeBaseEnabled?: boolean;
                 canBuyMoreCredits?: boolean;
+                cascadeWebSearchEnabled?: boolean;
+                canAllowCascadeInBackground?: boolean;
+                monthlyFlexCreditPurchaseAmount?: number;
+                defaultTeamConfig?: {
+                    allowMcpServers?: boolean;
+                    allowAutoRunCommands?: boolean;
+                    allowBrowserExperimentalFeatures?: boolean;
+                };
             };
             availablePromptCredits: number;
             availableFlowCredits?: number;
         };
         cascadeModelConfigData?: {
             clientModelConfigs: RawModelConfig[];
+            clientModelSorts?: {
+                name: string;
+                groups: { modelLabels: string[] }[];
+            }[];
+            defaultOverrideModelConfig?: {
+                modelOrAlias?: { model: string };
+            };
         };
     };
 }

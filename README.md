@@ -14,28 +14,29 @@
 
 Stop guessing when your AI credits will reset.
 
-- **Real-time Limits**: See remaining quota for Gemini 3.1 (Pro High/Low), Gemini 3 (Flash), Claude (Sonnet 4.5, Opus 4.5/4.6), and GPT-OSS 120B.
+- **Real-time Limits**: See remaining quota for Gemini 3.1 (Pro High/Low), Gemini 3 (Flash), Claude (Sonnet 4.6, Opus 4.6), and GPT-OSS 120B.
 - **Smart Prediction**: Calculates your current usage rate and predicts "runway" before exhaustion.
 - **Credit Tracking**: Monitor Prompt Consumption and Execution Consumption credits with visual breakdowns.
 - **Status Bar Integration**: Get critical health metrics (Quota % / Cache Size) directly in your VS Code status bar.
 
-### 2. � Optimizing Context Window (Memory)
+### 2. 🧠 Optimizing Context Window (Memory)
 
 Your **Context Window** is your most valuable resource. This dashboard helps you reclaim it.
 
 - **Brain Management**: Identify "heavy" tasks (e.g., >200KB) that are consuming your context window.
   - **Single Delete**: Click the **Trash Emoji (🗑️)** on the left of any task to delete it surgically.
   - **Clear Cache**: Use the "Clear Cache" button in the footer to automatically prune all but the 5 most recent tasks.
-- **Agent Conversations**: See how much memory your chat histories are consuming at a glance. (Note: Deletion of individual chats should be done safely via the Antigravity Agent Manager UI).
-- **Code Tracker**: See which project folders are indexed. Unlink unused contexts to prevent the agent from searching irrelevant code.
-- **Resource Monitoring**: Track workspace-level configurations including Rules, Workflows, and Skills with expandable file listings.
+- **Agent Conversations**: See how much memory your chat histories are consuming at a glance. We actively detect and prune bloated orphaned conversation `.tmp` files.
+- **Browser Recordings**: Expand and view individual AI browser recording sessions (by UUID), their storage size, and screenshot counts. Purge them globally with one click in the footer to reclaim gigabytes of disk space.
+- **Resource Monitoring**: Expandable folder-tree showing your project-level configurations including `GEMINI.md`, `AGENTS.md`, unified Knowledge Base entries, Workflows, and Skills.
 
-### 3. 💾 Storage Monitoring
+### 3. ⚡ Background Process Monitoring (AG Processes)
 
-**[NEW]** Gain visibility into hidden `.agent` costs.
+**[NEW]** Gain visibility into hidden `.agent` costs and rogue background processes.
 
-- **Workflow & Skill Analyzer**: See exactly how much space your definition files are consuming.
-- **Zero-Trust Connectivity**: Connects securely to the local Language Server process without external API calls.
+- **Process Scanner**: Automatically detects and lists local active Antigravity components, including memory-heavy Workspaces (Language Servers), headless web engines (AG Browser / Chrome), and type-checkers (Pyrefly LSP).
+- **Process Killer**: Rogue Chrome instances orphaned after web searches? Stuck Pyrefly instances? Click the dedicated **Kill** button to terminate them on the spot without crashing your workspace.
+- **Zero-Trust Connectivity**: Connects securely to the local Language Server process without pulling from external API endpoints.
 
 ---
 
@@ -84,8 +85,12 @@ Open the **Command Palette** (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `Antigrav
 
 The footer now provides direct access to critical actions:
 
-- **Edit Agent Instructions**: Quickly open your `GEMINI.md`.
-- **Clear Cache**: Frees up space by removing old conversation history.
+- **Rules (AGENTS.md)**: Instantly opens or creates the modern `AGENTS.md` rule file.
+- **Legacy Rules (GEMINI.md)**: Opens your existing `GEMINI.md` file.
+- **Clear Old Cache**: Prunes your old conversation history but keeps the 5 most recent task contexts.
+- **Clear ALL Cache**: Bypass the retention pool and permanently wipe out your entire conversation history folder.
+- **Clear Browser Recordings**: Purges all headless browser session screenshots globally to instantly free up disk space.
+- **Debug Info**: Dumps raw API quota state and system configurations for debugging connectivity and diagnosing API upgrades.
 - **Reconnect to Antigravity**: Reconnects to the language server (use if quota is inaccurate or charts freeze).
 - **Refresh Antigravity Code Window**: Reloads the VS Code window if the agent becomes unresponsive.
 

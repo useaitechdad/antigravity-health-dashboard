@@ -148,20 +148,46 @@ export class SidebarFooter extends LitElement {
         <div class="collapsible-wrapper ${this._isCollapsed ? 'collapsed' : ''}" style="${this._isCollapsed ? 'display: none;' : ''}">
           <div class="action-list">
              <!-- Configuration Group -->
-             <button class="action-item" @click=${() => this._postMessage('openRules')}>
+             <button class="action-item" @click=${() => this._postMessage('openAgentsRules')}>
                 <i class="codicon codicon-symbol-ruler action-icon"></i>
                 <div class="action-details">
-                   <span class="action-title">${this._t.rules || 'Rules'}</span>
-                   <span class="action-desc">Edit Agent Instructions</span>
+                   <span class="action-title">${this._t.rules || 'Rules'} (AGENTS.md)</span>
+                   <span class="action-desc">Edit modern Agent Instructions</span>
+                </div>
+             </button>
+
+             <button class="action-item" @click=${() => this._postMessage('openGeminiRules')}>
+                <i class="codicon codicon-symbol-ruler action-icon" style="opacity: 0.7;"></i>
+                <div class="action-details" style="opacity: 0.7;">
+                   <span class="action-title">Legacy Rules (GEMINI.md)</span>
+                   <span class="action-desc">Edit legacy Agent Instructions</span>
                 </div>
              </button>
              
-             <!-- Clear Cache -->
+             <!-- Clear Cache (Keep 5) -->
              <button class="action-item" @click=${() => this._postMessage('cleanCache')}>
                 <i class="codicon codicon-trash action-icon"></i>
                 <div class="action-details">
-                   <span class="action-title">Clear Cache</span>
+                   <span class="action-title">Clear Old Cache</span>
                    <span class="action-desc">Clean old tasks & history (keeps last 5)</span>
+                </div>
+             </button>
+
+             <!-- Clear ALL Cache -->
+             <button class="action-item" @click=${() => this._postMessage('cleanAllCache')}>
+                <i class="codicon codicon-trash action-icon" style="color: var(--vscode-errorForeground);"></i>
+                <div class="action-details">
+                   <span class="action-title" style="color: var(--vscode-errorForeground);">Clear ALL Cache</span>
+                   <span class="action-desc">Permanently wipe all task history</span>
+                </div>
+             </button>
+
+             <!-- Clear Browser Recordings -->
+             <button class="action-item" @click=${() => this._postMessage('clearBrowserRecordings')}>
+                <i class="codicon codicon-device-camera-video action-icon"></i>
+                <div class="action-details">
+                   <span class="action-title">Clear Browser Recordings</span>
+                   <span class="action-desc">Delete browser session screenshots</span>
                 </div>
              </button>
 

@@ -117,8 +117,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await appViewModel.refresh();
     }),
     vscode.commands.registerCommand("tfa.cleanCache", async () => {
-      const result = await appViewModel.cleanCache();
-      vscode.window.showInformationMessage(`Cleaned ${result.deletedCount} items, freed ${formatBytes(result.freedBytes)}`);
+      vscode.window.showInformationMessage("Cleaning cache... (keeping last 5 files)");
+      const result = await appViewModel.cleanCache(configManager.get('cache.autoCleanKeepCount', 5));
+      vscode.window.showInformationMessage(
+        `Cache cleaned. Kept ${configManager.get('cache.autoCleanKeepCount', 5)} files. Removed ${result.deletedCount} files, freeing ${formatBytes(result.freedBytes)} of space.`,
+      );
+    }),
+    vscode.commands.registerCommand("tfa.cleanAllCache", async () => {
+      const confirm = await vscode.window.showWarningMessage(
+        "Are you sure you want to permanently delete ALL task history and contexts?",
+        { modal: true },
+        "Delete All"
+      );
+      if (confirm === "Delete All") {
+        vscode.window.showInformationMessage("Wiping entire cache...");
+        const result = await appViewModel.cleanCache(0); // keep 0
+        vscode.window.showInformationMessage(
+          `Cache wiped. Removed ${result.deletedCount} files, freeing ${formatBytes(result.freedBytes)} of space.`,
+        );
+      }
+    }),
+    vscode.commands.registerCommand("tfa.clearBrowserRecordings", async () => {
+      const confirm = await vscode.window.showWarningMessage(
+        "Clear all browser recording screenshots? This cannot be undone.",
+        { modal: true },
+        "Clear All"
+      );
+      if (confirm === "Clear All") {
+        const result = await appViewModel.clearBrowserRecordings();
+        vscode.window.showInformationMessage(
+          `Cleared ${result.deletedCount} recording sessions, freed ${formatBytes(result.freedBytes)}`
+        );
+      }
     }),
     vscode.commands.registerCommand("tfa.restartLanguageServer", async () => {
       await vscode.window.withProgress({
@@ -158,14 +188,12 @@ Connection Status
 -----------------
 Status: ${state.connectionStatus}
 Failure Reason: ${state.failureReason || 'None'}
-Last Updated: ${new Date(state.lastUpdated).toISOString()}
 
 Quota State (Frontend)
 ----------------------
 Active Group: ${state.quota.activeGroupId}
 Display Items: ${state.quota.displayItems.length}
 User Tier: ${state.user?.tier || 'Unknown'}
-Plan Name: ${state.user?.planName || 'Unknown'}
 
 Raw Quota Snapshot (Last Received)
 ----------------------------------
@@ -177,7 +205,7 @@ Refesh Rate: ${configManager.get('dashboard.refreshRate', 60)}
 Debug Mode: ${configManager.get('system.debugMode', false)}
 `.trim();
 
-      const doc = await vscode.workspace.openTextDocument({ content: output, language: 'json' });
+      const doc = await vscode.workspace.openTextDocument({ content: output, language: 'plaintext' });
       await vscode.window.showTextDocument(doc);
     })
   );

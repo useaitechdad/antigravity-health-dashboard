@@ -76,12 +76,16 @@ export interface CacheViewState {
     totalSize: number;
     brainSize: number;
     conversationsSize: number;
-    codeContextsSize: number;
+    implicitSize: number;
+    knowledgeSize: number;
+    browserRecordingsSize: number;
     brainCount: number;
     formattedTotal: string;
     formattedBrain: string;
     formattedConversations: string;
-    formattedCodeContexts: string;
+    formattedImplicit: string;
+    formattedKnowledge: string;
+    formattedBrowserRecordings: string;
 }
 
 // ==================== Tree View State ====================
@@ -110,6 +114,8 @@ export interface TreeViewState {
     tasks: TreeSectionState;
     conversations: TreeSectionState;
     contexts: TreeSectionState;
+    recordings: TreeSectionState;
+    knowledge: TreeSectionState;
     resources: TreeSectionState;
 }
 
@@ -144,6 +150,8 @@ export interface UserViewState {
     knowledgeBaseEnabled?: boolean;
     upgradeUri?: string;
     upgradeText?: string;
+    cascadeWebSearchEnabled?: boolean;
+    availableCredits?: { creditType: string; creditAmount: string; minimumCreditAmountForUsage?: string }[];
 }
 
 // ==================== Token Usage View State ====================
@@ -185,13 +193,23 @@ export interface SidebarData {
     tasks: TreeSectionState;
     conversations: TreeSectionState;
     contexts: TreeSectionState;
+    recordings: TreeSectionState;
+    knowledge: TreeSectionState;
     resources: TreeSectionState;
+    agProcesses?: AgProcessInfo[];
     connectionStatus: ConnectionStatus;
     failureReason?: 'no_process' | 'ambiguous' | 'no_port' | 'auth_failed' | 'workspace_mismatch' | null;
     gaugeStyle?: string;
     showUserInfoCard?: boolean;
     showCredits?: boolean;
     uiScale?: number;
+}
+
+export interface AgProcessInfo {
+    pid: number;
+    name: string;
+    command: string;
+    type: 'language_server' | 'browser' | 'extension' | 'child' | 'unknown';
 }
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'failed' | 'detecting';
@@ -204,6 +222,7 @@ export interface AppState {
     user?: UserViewState;
     tokenUsage?: TokenUsageViewState;
     tree: TreeViewState;
+    agProcesses: AgProcessInfo[];
     connectionStatus: ConnectionStatus;
     failureReason?: 'no_process' | 'ambiguous' | 'no_port' | 'auth_failed' | 'workspace_mismatch' | null;
     lastUpdated: number;
@@ -217,4 +236,5 @@ export interface WebviewMessage {
     contextId?: string;
     folderId?: string;
     path?: string;
+    pid?: number;
 }

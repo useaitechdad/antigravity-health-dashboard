@@ -86,16 +86,32 @@ export class ProcessFinder {
 
       this.candidateCount = infos.length;
       
+      // Sort candidates: matching workspace IDs first, then non-matching ones.
+      // This ensures we prefer the right server in multi-window setups,
+      // but still try to connect even if workspace IDs don't match (common
+      // on Windows due to path normalization differences).
+      const matched: ProcessInfo[] = [];
+      const unmatched: ProcessInfo[] = [];
+      
       for (const info of infos) {
-          // Priority check: Workspace ID matching
-          // The Language Server is 1:1 with a workspace usually.
           if (expectedIds.length > 0 && info.workspaceId && !expectedIds.includes(info.workspaceId)) {
-              if (infos.length === 1) this.failureReason = "workspace_mismatch";
-              continue; 
+              unmatched.push(info);
+          } else {
+              matched.push(info);
           }
-
+      }
+      
+      // Try matched first, then unmatched as fallback
+      const orderedCandidates = [...matched, ...unmatched];
+      
+      for (const info of orderedCandidates) {
           const result = await this.verifyAndConnect(info);
           if (result) return result;
+      }
+
+      // If we only had unmatched candidates and none connected, report workspace_mismatch
+      if (matched.length === 0 && unmatched.length > 0) {
+          this.failureReason = "workspace_mismatch";
       }
 
       return null;

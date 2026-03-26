@@ -19,6 +19,7 @@
 import * as os from "os";
 import * as path from "path";
 import { GEMINI_ROOT_DIR_NAME, ANTIGRAVITY_DIR_NAME } from "./constants";
+import * as fs from "fs";
 
 export function getGeminiRootDir(): string {
   return path.join(os.homedir(), GEMINI_ROOT_DIR_NAME);
@@ -29,6 +30,22 @@ export function getGeminiBaseDir(): string {
 }
 
 export function getGlobalRulesPath(): string {
+  // Prefer AGENTS.md if it exists (v1.20.5+), fallback to GEMINI.md
+  const agentsPath = path.join(getGeminiRootDir(), "AGENTS.md");
+  const geminiPath = path.join(getGeminiRootDir(), "GEMINI.md");
+  try {
+    fs.accessSync(agentsPath);
+    return agentsPath;
+  } catch {
+    return geminiPath;
+  }
+}
+
+export function getAgentsRulesPath(): string {
+  return path.join(getGeminiRootDir(), "AGENTS.md");
+}
+
+export function getGeminiRulesPath(): string {
   return path.join(getGeminiRootDir(), "GEMINI.md");
 }
 
@@ -40,8 +57,21 @@ export function getConversationsDir(): string {
   return path.join(getGeminiBaseDir(), "conversations");
 }
 
+/** @deprecated Code tracker is no longer actively used by Antigravity as of ~Feb 2026 */
 export function getCodeContextsDir(): string {
   return path.join(getGeminiBaseDir(), "code_tracker", "active");
+}
+
+export function getKnowledgeDir(): string {
+  return path.join(getGeminiBaseDir(), "knowledge");
+}
+
+export function getBrowserRecordingsDir(): string {
+  return path.join(getGeminiBaseDir(), "browser_recordings");
+}
+
+export function getImplicitDir(): string {
+  return path.join(getGeminiBaseDir(), "implicit");
 }
 
 export function getMcpConfigPath(): string {

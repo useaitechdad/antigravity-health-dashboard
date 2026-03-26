@@ -6,13 +6,24 @@
       "shortLabel": "Flash",
       "themeColor": "#40C4FF",
       "prefixes": [
-        "gemini-3-flash"
+        "gemini-3-flash",
+        "gemini 3 flash"
       ],
       "models": [
         {
           "id": "gemini-3-flash",
-          "modelName": "MODEL_PLACEHOLDER_M18",
+          "modelName": "MODEL_PLACEHOLDER_M47",
           "displayName": "Gemini 3 Flash"
+        },
+        {
+          "id": "MODEL_PLACEHOLDER_M47",
+          "modelName": "MODEL_PLACEHOLDER_M47",
+          "displayName": "Gemini 3 Flash"
+        },
+        {
+          "id": "MODEL_PLACEHOLDER_M18",
+          "modelName": "MODEL_PLACEHOLDER_M18",
+          "displayName": "Gemini 3 Flash (Legacy)"
         }
       ]
     },
@@ -29,11 +40,31 @@
       "models": [
         {
           "id": "gemini-3-1-pro-high",
-          "modelName": "MODEL_GEMINI_3_1_PRO_HIGH",
+          "modelName": "MODEL_PLACEHOLDER_M37",
+          "displayName": "Gemini 3.1 Pro (High)"
+        },
+        {
+          "id": "MODEL_PLACEHOLDER_M37",
+          "modelName": "MODEL_PLACEHOLDER_M37",
           "displayName": "Gemini 3.1 Pro (High)"
         },
         {
           "id": "gemini-3-1-pro-low",
+          "modelName": "MODEL_PLACEHOLDER_M36",
+          "displayName": "Gemini 3.1 Pro (Low)"
+        },
+        {
+          "id": "MODEL_PLACEHOLDER_M36",
+          "modelName": "MODEL_PLACEHOLDER_M36",
+          "displayName": "Gemini 3.1 Pro (Low)"
+        },
+        {
+          "id": "MODEL_GEMINI_3_1_PRO_HIGH",
+          "modelName": "MODEL_GEMINI_3_1_PRO_HIGH",
+          "displayName": "Gemini 3.1 Pro (High)"
+        },
+        {
+          "id": "MODEL_GEMINI_3_1_PRO_LOW",
           "modelName": "MODEL_GEMINI_3_1_PRO_LOW",
           "displayName": "Gemini 3.1 Pro (Low)"
         }
@@ -48,6 +79,21 @@
         "claude"
       ],
       "models": [
+        {
+          "id": "claude-4-6-sonnet-thinking",
+          "modelName": "MODEL_CLAUDE_4_6_SONNET_THINKING",
+          "displayName": "Claude Sonnet 4.6 (Thinking)"
+        },
+        {
+          "id": "claude-4-6-opus-thinking",
+          "modelName": "MODEL_PLACEHOLDER_M26",
+          "displayName": "Claude Opus 4.6 (Thinking)"
+        },
+        {
+          "id": "MODEL_PLACEHOLDER_M26",
+          "modelName": "MODEL_PLACEHOLDER_M26",
+          "displayName": "Claude Opus 4.6 (Thinking)"
+        },
         {
           "id": "claude-4-5-sonnet",
           "modelName": "MODEL_CLAUDE_4_5_SONNET",

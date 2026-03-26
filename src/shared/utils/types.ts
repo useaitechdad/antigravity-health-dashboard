@@ -30,6 +30,9 @@ export interface ModelQuotaInfo {
   isExhausted: boolean;
   resetTime: Date;
   timeUntilReset: string;
+  supportsImages?: boolean;
+  isRecommended?: boolean;
+  tagTitle?: string;
 }
 
 export interface PromptCreditsInfo {
@@ -63,6 +66,12 @@ export interface QuotaSnapshot {
   models: ModelQuotaInfo[];
 }
 
+export interface AvailableCredit {
+  creditType: string;
+  creditAmount: string;
+  minimumCreditAmountForUsage?: string;
+}
+
 export interface UserInfo {
   name?: string;
   email?: string;
@@ -78,6 +87,9 @@ export interface UserInfo {
   canBuyMoreCredits?: boolean;
   monthlyPromptCredits?: number;
   availablePromptCredits?: number;
+  cascadeWebSearchEnabled?: boolean;
+  canAllowCascadeInBackground?: boolean;
+  availableCredits?: AvailableCredit[];
 }
 
 // ==================== Process Detection Related ====================
@@ -148,10 +160,9 @@ export interface FileItem {
   type?: 'file' | 'directory';
 }
 
-// NEW: Storage Item for Rules/Skills/Workflows
 export interface StorageItem {
   name: string;
-  type: 'rule' | 'workflow' | 'skill';
+  type: 'rule' | 'workflow' | 'skill' | 'knowledge' | 'recording' | 'implicit' | 'annotation';
   path: string;
   size: number;
   fileCount: number;
@@ -160,14 +171,17 @@ export interface StorageItem {
 export interface CacheInfo {
   brainSize: number;
   conversationsSize: number;
-  codeContextsSize: number;
+  implicitSize: number;
+  knowledgeSize: number;
+  browserRecordingsSize: number;
   totalSize: number;
   brainCount: number;
   conversationsCount: number;
   brainTasks: BrainTask[];
   conversations: BrainTask[];
   codeContexts: CodeContext[];
-  // NEW: Custom storage items
+  recordingSessions: BrainTask[];
+  knowledgeEntries: BrainTask[];
   storageItems?: StorageItem[];
 }
 

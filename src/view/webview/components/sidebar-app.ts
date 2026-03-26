@@ -84,13 +84,25 @@ export class SidebarApp extends LitElement {
   };
 
   @state()
-  private _contexts: TreeSectionState = {
-    title: 'Workspace Code Context',
+  private _recordings: TreeSectionState = {
+    title: 'Browser Recordings',
     stats: 'Loading...',
     collapsed: true,
     folders: [],
     loading: true
   };
+
+  @state()
+  private _knowledge: TreeSectionState = {
+    title: 'Knowledge',
+    stats: 'Loading...',
+    collapsed: true,
+    folders: [],
+    loading: true
+  };
+
+  @state()
+  private _agProcesses: { pid: number; name: string; command: string; type: string }[] = [];
 
   @state()
   private _resources: TreeSectionState = {
@@ -226,13 +238,36 @@ export class SidebarApp extends LitElement {
     if (state.cache) {
       this._cache = state.cache;
     }
+    if (state.recordings) {
+      const backendRecordings = state.recordings as TreeSectionState & { expanded?: boolean };
+      this._recordings = {
+        title: 'Browser Recordings',
+        stats: this._cache?.formattedBrowserRecordings || `${backendRecordings.folders?.length || 0} Sessions`,
+        collapsed: !backendRecordings.expanded,
+        folders: backendRecordings.folders || [],
+        loading: false
+      };
+    }
+    if (state.knowledge) {
+      const backendKnowledge = state.knowledge as TreeSectionState & { expanded?: boolean };
+      this._knowledge = {
+        title: 'Knowledge',
+        stats: this._cache?.formattedKnowledge || `${backendKnowledge.folders?.length || 0} Entries`,
+        collapsed: !backendKnowledge.expanded,
+        folders: backendKnowledge.folders || [],
+        loading: false
+      };
+    }
+    if (state.agProcesses) {
+      this._agProcesses = state.agProcesses;
+    }
     if (state.tasks) {
       // Adapter: Backend (expanded) -> Frontend (collapsed)
       const backendTasks = state.tasks as TreeSectionState & { expanded?: boolean };
       this._tasks = {
         title: 'Brain',
         stats: this._cache?.formattedBrain || `${backendTasks.folders?.length || 0} Tasks`,
-        collapsed: !backendTasks.expanded, // Invert logic
+        collapsed: !backendTasks.expanded,
         folders: backendTasks.folders || [],
         loading: false
       };
@@ -244,17 +279,6 @@ export class SidebarApp extends LitElement {
         stats: this._cache?.formattedConversations || `${backendConversations.folders?.length || 0} Conversations`,
         collapsed: !backendConversations.expanded,
         folders: backendConversations.folders || [],
-        loading: false
-      };
-    }
-    if (state.contexts) {
-      // Adapter: Backend (expanded) -> Frontend (collapsed)
-      const backendContexts = state.contexts as TreeSectionState & { expanded?: boolean };
-      this._contexts = {
-        title: 'Workspace Code Context',
-        stats: this._cache?.formattedCodeContexts || `${backendContexts.folders?.length || 0} Projects`,
-        collapsed: !backendContexts.expanded, // Invert logic
-        folders: backendContexts.folders || [],
         loading: false
       };
     }
@@ -364,6 +388,14 @@ export class SidebarApp extends LitElement {
     this._vscode.postMessage({ type: 'toggleResources' });
   }
 
+  private _onToggleRecordings(): void {
+    this._recordings = { ...this._recordings, collapsed: !this._recordings.collapsed };
+  }
+
+  private _onToggleKnowledge(): void {
+    this._knowledge = { ...this._knowledge, collapsed: !this._knowledge.collapsed };
+  }
+
 
 
   // ==================== Render ====================
@@ -427,13 +459,14 @@ export class SidebarApp extends LitElement {
         ></folder-tree>
 
         <folder-tree
-          title="${(window as unknown as WindowWithVsCode).__TRANSLATIONS__?.codeTracker || 'Workspace Code Context'}"
-          .stats=${this._contexts.stats}
-          ?collapsed=${this._contexts.collapsed}
-          ?loading=${this._contexts.loading}
-          .folders=${this._contexts.folders}
-          emptyText="${(window as unknown as WindowWithVsCode).__TRANSLATIONS__?.noCacheFound || 'No code context cache'}"
-          @toggle=${this._onToggleContexts}
+          title="Browser Recordings"
+          .stats=${this._recordings.stats}
+          ?collapsed=${this._recordings.collapsed}
+          ?loading=${this._recordings.loading}
+          .folders=${this._recordings.folders}
+          .allowDelete=${false}
+          emptyText="No recording sessions found"
+          @toggle=${this._onToggleRecordings}
         ></folder-tree>
 
         <folder-tree
@@ -446,6 +479,11 @@ export class SidebarApp extends LitElement {
           emptyText="No resources found"
           @toggle=${this._onToggleResources}
         ></folder-tree>
+        ${!this._resources.collapsed && this._resources.folders.length > 0 ? html`
+          <div style="padding: 4px 12px 8px; font-size: 11px; opacity: 0.6; font-style: italic;">
+            💡 Use Knowledge in Agent Manager to view and manage knowledge details.
+          </div>
+        ` : ''}
 
         <quota-dashboard 
           .quotas=${this._quotas} 
@@ -453,6 +491,49 @@ export class SidebarApp extends LitElement {
         ></quota-dashboard>
         
         <usage-chart .data=${this._chartData}></usage-chart>
+
+        <!-- AG Process Monitor -->
+        ${this._agProcesses.length > 0 ? html`
+          <div style="
+            margin-top: 8px;
+            border-top: 1px solid var(--vscode-widget-border);
+            padding-top: 8px;
+          ">
+            <div style="
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+              padding: 4px 10px;
+              opacity: 0.8;
+            ">⚡ AG Processes (${this._agProcesses.length})</div>
+            ${this._agProcesses.map(p => html`
+              <div style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 4px 10px;
+                font-size: 11px;
+                gap: 6px;
+              ">
+                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.command}">
+                  ${p.type === 'language_server' ? '🖥️' : p.type === 'browser' ? '🌐' : '🔌'} ${p.name}
+                </span>
+                <span style="opacity:0.5;font-size:10px;">PID:${p.pid}</span>
+                ${p.type !== 'language_server' ? html`
+                  <button @click=${() => this._vscode?.postMessage({ type: 'killProcess', pid: p.pid })} style="
+                    background: var(--vscode-button-secondaryBackground);
+                    color: var(--vscode-errorForeground);
+                    border: none;
+                    font-size: 10px;
+                    padding: 1px 6px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                  " title="Kill this process">Kill</button>
+                ` : ''}
+              </div>
+            `)}
+          </div>
+        ` : ''}
 
       </div>
 

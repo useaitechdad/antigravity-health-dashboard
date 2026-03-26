@@ -33,6 +33,9 @@ import {
   getMcpConfigPath,
   getBrowserAllowlistPath,
   getGlobalRulesPath,
+  getAgentsRulesPath,
+  getGeminiRulesPath,
+  getKnowledgeDir,
 } from "../shared/utils/paths";
 import { WebviewHtmlBuilder } from "./html-builder";
 
@@ -84,7 +87,7 @@ export class SidebarProvider
     this._postStateUpdate();
   }
 
-  private handleMessage(msg: WebviewMessage): void {
+  private async handleMessage(msg: WebviewMessage): Promise<void> {
     switch (msg.type) {
       case "deleteTask":
         if (msg.taskId) this._viewModel.deleteTask(msg.taskId);
@@ -178,6 +181,40 @@ export class SidebarProvider
         break;
       case "cleanCache":
         vscode.commands.executeCommand("tfa.cleanCache");
+        break;
+      case "cleanAllCache":
+        vscode.commands.executeCommand("tfa.cleanAllCache");
+        break;
+      case "clearBrowserRecordings":
+        vscode.commands.executeCommand("tfa.clearBrowserRecordings");
+        break;
+      case "openGeminiRules":
+        vscode.commands.executeCommand(
+          "vscode.open",
+          vscode.Uri.file(getGeminiRulesPath()),
+        );
+        break;
+      case "openAgentsRules":
+        vscode.commands.executeCommand(
+          "vscode.open",
+          vscode.Uri.file(getAgentsRulesPath()),
+        );
+        break;
+      case "openKnowledgeDir":
+        vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(getKnowledgeDir()));
+        break;
+      case "killProcess":
+        if (msg.pid) {
+          const killed = await this._viewModel.killProcess(msg.pid);
+          if (killed) {
+            vscode.window.showInformationMessage(`Killed process ${msg.pid}`);
+            // Refresh process list
+            const processes = await this._viewModel.getAgProcesses();
+            this._view?.webview.postMessage({ type: "update", payload: { agProcesses: processes } });
+          } else {
+            vscode.window.showErrorMessage(`Failed to kill process ${msg.pid}`);
+          }
+        }
         break;
     }
   }

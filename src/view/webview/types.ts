@@ -101,6 +101,7 @@ export interface WebviewMessage {
   contextId?: string;
   folderId?: string;
   path?: string;
+  pid?: number;
 }
 
 // ==================== User Info Types ====================
@@ -156,7 +157,10 @@ export interface WebviewStateUpdate {
   tasks?: TreeSectionState;
   conversations?: TreeSectionState;
   contexts?: TreeSectionState;
+  recordings?: TreeSectionState;
+  knowledge?: TreeSectionState;
   resources?: TreeSectionState;
+  agProcesses?: { pid: number; name: string; command: string; type: string }[];
   connectionStatus?: ConnectionStatus;
   failureReason?: 'no_process' | 'ambiguous' | 'no_port' | 'auth_failed' | 'workspace_mismatch' | null;
   gaugeStyle?: string;
@@ -166,12 +170,16 @@ export interface WebviewStateUpdate {
     totalSize: number;
     brainSize: number;
     conversationsSize: number;
-    codeContextsSize: number;
+    implicitSize: number;
+    knowledgeSize: number;
+    browserRecordingsSize: number;
     brainCount: number;
     formattedTotal: string;
     formattedBrain: string;
     formattedConversations: string;
-    formattedCodeContexts: string;
+    formattedImplicit: string;
+    formattedKnowledge: string;
+    formattedBrowserRecordings: string;
   };
   autoAcceptEnabled?: boolean;
   uiScale?: number;
